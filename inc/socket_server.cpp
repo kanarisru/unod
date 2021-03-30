@@ -165,23 +165,19 @@ DWORD WINAPI DO_CLIENT_WAIT(LPVOID data) {
 DWORD WINAPI DO_CLIENT_THREAD(LPVOID data) {
 
 
-
     int number = 0;
     PT_SOCKET_THREAD ptSocketThread = (PT_SOCKET_THREAD) data;
 
     printf("DO_CLIENT_THREAD: %d\n", ptSocketThread->connectionIdx);
 
     PT_SOCKET_CONNECTION ptSocketClient;
-    int countBytes;
     int summaryBytes = 0;
     char * answer1000;
 //    int delayMs = 1;
-    char buff[1024*1024];
 
     while (true) {
         if (ptSocketThread->connectionIdx < 0) {
             printf("ZERO THREAD CLIENT, SLEEP 5 sec\n");
-
             continue;
         }
 
@@ -193,28 +189,31 @@ DWORD WINAPI DO_CLIENT_THREAD(LPVOID data) {
 
         ptSocketClient = &SocketConnections[ptSocketThread->connectionIdx];
 
-        countBytes = recv(ptSocketClient->sock, buff, 11000, 0);
-        if(countBytes>0) {
-            summaryBytes+=countBytes;
-            ptSocketClient->lastActivity = getMillisecond();
-            answer1000 = ptSocketClient->pServer->callback(buff, countBytes, ptSocketThread->connectionIdx);
-//            printf("Receive %d bytes\n", countBytes);
-//            Sleep(delayMs);
-            buff[countBytes]=0;
+        int packSize;
+        int recvCount = 0;
+        int recvTotal = -1;
 
-            if(answer1000!= nullptr) {
-                int ansSize = 0;
-                for(int i=0;i<1024;i++) if(answer1000[i]==0) { ansSize = i; break; }
-                send(ptSocketClient->sock, answer1000, ansSize, 0);
+        if(recv(ptSocketClient->sock, (char*)&packSize, sizeof(packSize), 0)>0) {
+            if(ptSocketClient->size_buff<packSize) {
+                ptSocketClient->buff = (char *) realloc(ptSocketClient->buff, packSize);
+                if(ptSocketClient->buff== nullptr) {
+                    printf("Не могу выделить память %d", packSize);
+                    exit(1);
+                }
+
+                while ( (recvCount= recv(ptSocketClient->sock, ptSocketClient->buff + recvTotal, packSize-recvTotal , 0))>0 ) {
+                    recvTotal+=recvCount;
+                }
+
+                if(recvTotal!=packSize) {
+                    printf("Ошибка передачи данных %d!=%d", recvTotal, packSize);
+                    exit(1);
+                }
             }
-
-//            printf("%s", buff);
-
-
-
         }
 
-        if(countBytes<=0) {
+
+        if(recvTotal<=0) {
             printf("Closesocket for client #%d\n", ptSocketThread->connectionIdx);
             closesocket(ptSocketClient->sock);
             ptSocketClient->sock = 0;
@@ -225,9 +224,14 @@ DWORD WINAPI DO_CLIENT_THREAD(LPVOID data) {
             SuspendThread(ptSocketThread->hThread);
 
 //            break;
+        } else {
+            answer1000 = ptSocketClient->pServer->callback(ptSocketClient->buff, recvTotal, ptSocketThread->connectionIdx);
+            if(answer1000!= nullptr) {
+                int ansSize = 0;
+                for(int i=0;i<1024;i++) if(answer1000[i]==0) { ansSize = i; break; }
+                send(ptSocketClient->sock, answer1000, ansSize, 0);
+            }
         }
-
-
 
     }
 
