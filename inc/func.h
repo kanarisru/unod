@@ -16,6 +16,6 @@ typedef struct {
 P_CHAR_DATA receive_from_socket_first_size(SOCKET sock);
 
 
-
+int _bespoleznaya_function();
 
 #endif //UNOD2_FUNC_H

@@ -23,3 +23,8 @@ P_CHAR_DATA receive_from_socket_first_size(SOCKET sock) {
     }
     return res;
 }
+
+
+int _bespoleznaya_function() {
+    return -7;
+}
