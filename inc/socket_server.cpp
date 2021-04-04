@@ -191,29 +191,39 @@ DWORD WINAPI DO_CLIENT_THREAD(LPVOID data) {
 
         int packSize;
         int recvCount = 0;
-        int recvTotal = -1;
+        int recvTotal = 0;
+        bool ok = false;
+
 
         if(recv(ptSocketClient->sock, (char*)&packSize, sizeof(packSize), 0)>0) {
+            printf("packSize = %d\n", packSize);
             if(ptSocketClient->size_buff<packSize) {
                 ptSocketClient->buff = (char *) realloc(ptSocketClient->buff, packSize);
                 if(ptSocketClient->buff== nullptr) {
-                    printf("Не могу выделить память %d", packSize);
+                    printf("Не могу выделить память %d\n", packSize);
                     exit(1);
                 }
 
-                while ( (recvCount= recv(ptSocketClient->sock, ptSocketClient->buff + recvTotal, packSize-recvTotal , 0))>0 ) {
+                while ( (recvCount= recv(ptSocketClient->sock, ptSocketClient->buff, packSize-recvTotal , 0))>=0 ) {
+                    printf("recvCount = %d\n", recvCount);
                     recvTotal+=recvCount;
                 }
+
+                printf("recvCount_0 = %d\n", recvCount);
 
                 if(recvTotal!=packSize) {
                     printf("Ошибка передачи данных %d!=%d", recvTotal, packSize);
                     exit(1);
+                } else {
+                    ok = true;
                 }
             }
         }
 
+        printf("recvTotal = %d\n", recvTotal);
 
-        if(recvTotal<=0) {
+//        if(recvTotal<=0) {
+        if(!ok) {
             printf("Closesocket for client #%d\n", ptSocketThread->connectionIdx);
             closesocket(ptSocketClient->sock);
             ptSocketClient->sock = 0;

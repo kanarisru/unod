@@ -5,6 +5,13 @@
 
 DWORD a;
 
+
+/**
+ * Ветка куда что то вставляем
+ * @return
+ */
+
+
 int main() {
     char command[100];
 
@@ -13,8 +20,8 @@ int main() {
     INIT_SERVER_ALL();
     INIT_CLIENT_ALL();
 
-    ADD_SOCKET_SERVER(6660, &ReceiveData);
-    ADD_SOCKET_SERVER(6661, &ReceiveData);
+//    ADD_SOCKET_SERVER(6660, &ReceiveData);
+//    ADD_SOCKET_SERVER(6661, &ReceiveData);
     ADD_SOCKET_SERVER(7070, &ReceiveNat);
 
     int cmdNo = 0;
