@@ -12,6 +12,11 @@ DWORD a;
  */
 
 
+/**
+ * А тут мы напишем что то для DEV ветки
+ * @return
+ */
+
 int main() {
     char command[100];
 
